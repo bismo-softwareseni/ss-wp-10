@@ -1,0 +1,22 @@
+{
+  "name": "ss-wp-10",
+  "version": "1.0.0",
+  "description": "SoftwareSeni Testimonial Block",
+  "main": "build/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "wp-scripts start",
+    "build": "wp-scripts build"
+  },
+  "author": "Bismo-SoftwareSeni",
+  "license": "GPL-2.0",
+  "devDependencies": {
+    "@babel/core": "^7.5.5",
+    "@babel/preset-env": "^7.5.5",
+    "@babel/preset-react": "^7.0.0",
+    "@wordpress/scripts": "3.4.0",
+    "babel-loader": "^8.0.6",
+    "webpack": "^4.39.1",
+    "webpack-cli": "^3.3.6"
+  }
+}
