@@ -1,11 +1,12 @@
 // -- register block type
-const { registerBlockType } = wp.blocks;
+const { 
+    registerBlockType,
+ } = wp.blocks;
 
 // -- for customization
 const { 
-    RichText,
-    TextControl,
     AlignmentToolbar,
+    RichText,
     BlockControls,
     BlockAlignmentToolbar,
     InspectorControls,
@@ -13,6 +14,7 @@ const {
 
 // -- panels
 const {
+    TextControl,
     PanelBody,
     PanelRow,
 } = wp.components;
@@ -23,39 +25,31 @@ const {
 } = wp.data;
  
 
- 
 registerBlockType( 'ss-wp-10/ss-testimonial-block', {
     title: 'Softwareseni Testimonial',
     icon: 'format-chat',
     category: 'common',
     attributes: {
-        content: {
+        maxTestimonialPerPage: {
             type: 'integer',
-            default: 1
-        },
-        alignment: {
-            type: 'string',
-            default: 'none',
+            default: 1,
         },
     },
-    edit: withSelect( ( select ) => {
+    edit: withSelect( ( select, attributes ) => {
         return (
             {
-                posts: select( 'core' ).getEntityRecords( 'postType', 'wt9-testimonial' )
+                posts: select( 'core' ).getEntityRecords( 'postType', 'wt9-testimonial', { per_page: attributes.attributes.maxTestimonialPerPage } )
             }
-        )
-    } )( ( { posts, className, props } ) => {
-        const {
-            attributes: {
-                content,
-                alignment,
-            },
-        } = props;
+        );
+    } )( ( { posts, className, attributes, setAttributes } ) => {
+        console.log( attributes );
 
-        const onChangeAlignment = ( newAlignment ) => {
-            props.setAttributes( { alignment: newAlignment === undefined ? 'none' : newAlignment } );
+        // -- set testimonial value
+        const onChangeMaxTestimonial = ( newValue ) => {
+            setAttributes( { maxTestimonialPerPage: Number.isNaN( parseInt( newValue ) ) ? 1 : parseInt( newValue ) } );
         };
 
+        // -- get testimonials
         if ( ! posts ) {
             return "Loading...";
         }
@@ -76,35 +70,26 @@ registerBlockType( 'ss-wp-10/ss-testimonial-block', {
                 );
             }
         }
-  
+
         return (
             <div>
                 {
-                    <BlockControls>
-                    <AlignmentToolbar
-                        value={ alignment }
-                        onChange={ onChangeAlignment }
-                    />
-                    </BlockControls>
-                }
-                {
                     <InspectorControls>
-                    <PanelBody title={ 'Maximum Testimonials Per Page' } >
+                    <PanelBody title={ 'Maximum Testimonials Per Page' }>
                         <PanelRow>
                             <TextControl
-                                label="Maximum Testimonials Per Page"
-                                value={ className }
-                                onChange={ onChangeContent }
-                            />
+                                onChange={onChangeMaxTestimonial}
+                                value={attributes.maxTestimonialPerPage}
+                            /> 
                         </PanelRow>
                     </PanelBody>
                     </InspectorControls>
                 }
                 { results }
             </div>
-        ) 
-    } ),
-    save: ( props ) => {
+        );
+    }),
+    save: () => {
         return null;
     },
 } );
