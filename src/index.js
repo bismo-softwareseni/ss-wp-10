@@ -3,6 +3,18 @@ const {
     registerBlockType,
  } = wp.blocks;
 
+// -- to get custom rest api data
+const {
+    apiFetch
+} = wp;
+const {
+    registerStore,
+    withSelect,
+} = wp.data;
+
+// -- custom testimonial REST API endpoints
+const ssTestimonialApiUrl = "/ss-wp-9/v1/testimonials/"; 
+
 // -- for customization
 const { 
     AlignmentToolbar,
@@ -19,11 +31,65 @@ const {
     PanelRow,
 } = wp.components;
 
-// -- to retrieve testimonial data
-const { 
-    withSelect 
-} = wp.data;
- 
+
+// -- get testimonials by registering store
+const DEFAULT_STATE = {
+    dataTestimonials: {}
+};
+const actions = {
+	setTestimonials( dataTestimonials ) {
+		return {
+			type: 'SET_TESTIMONIALS',
+			dataTestimonials,
+		};
+	},
+	getTestimonials( path ) {
+		return {
+			type: 'GET_TESTIMONIALS',
+			path,
+		};
+	},
+};
+
+const store = registerStore( 'ss-wp-10/testimonials', {
+	reducer( state = DEFAULT_STATE, action ) {
+        console.log( action );
+		switch ( action.type ) {
+			case 'SET_TESTIMONIALS':
+				return {
+					...state,
+					dataTestimonials: action.dataTestimonials,
+				};
+		}
+
+		return state;
+	},
+
+	actions,
+
+	selectors: {
+		getTestimonials( state ) {
+			const { dataTestimonials } = state;
+			return dataTestimonials;
+		},
+	},
+
+	controls: {
+		GET_TESTIMONIALS( action ) {
+			return apiFetch( { path: action.path } );
+		},
+	},
+
+	resolvers: {
+		* getTestimonials( customQuery ) {
+			const dataTestimonials = yield actions.getTestimonials( ssTestimonialApiUrl+customQuery );
+            
+            console.log( customQuery );
+            return actions.setTestimonials( dataTestimonials );
+		},
+	},
+} );
+// -- end get testimonials by registering store
 
 registerBlockType( 'ss-wp-10/ss-testimonial-block', {
     title: 'Softwareseni Testimonial',
@@ -34,43 +100,45 @@ registerBlockType( 'ss-wp-10/ss-testimonial-block', {
             type: 'integer',
             default: 1,
         },
+        testimonialFontSize: {
+            type: 'integer',
+            default: 16,
+        }
     },
-    edit: withSelect( ( select, attributes ) => {
+    edit: withSelect( ( select, ownProps ) => {
         return (
             {
-                posts: select( 'core' ).getEntityRecords( 'postType', 'wt9-testimonial', { per_page: attributes.attributes.maxTestimonialPerPage } )
+                testimonials: select( 'ss-wp-10/testimonials' ).getTestimonials( "?per_page="+ownProps.attributes.maxTestimonialPerPage )
             }
-        );
-    } )( ( { posts, className, attributes, setAttributes } ) => {
-        console.log( attributes );
-
+        )
+    } )( ( { testimonials, className, attributes, setAttributes } ) => {        
         // -- set testimonial value
         const onChangeMaxTestimonial = ( newValue ) => {
             setAttributes( { maxTestimonialPerPage: Number.isNaN( parseInt( newValue ) ) ? 1 : parseInt( newValue ) } );
         };
 
-        // -- get testimonials
-        if ( ! posts ) {
+        // -- set testimonial output
+        if ( ! testimonials.data ) {
             return "Loading...";
         }
  
-        if ( posts && posts.length === 0 ) {
-            return "No posts";
+        if ( testimonials.data && testimonials.data.length === 0 ) {
+            return "No Testimonials";
         }
         
         // -- store the results in array
-        let results = [];
+        let testimonials_output = [];
 
-        if( posts.length > 0 ) {
-            for( let i=0; i<posts.length; i++ ) {
-                results.push( 
-                    <a className={ 'ss-testimonial-title ' + className } href={ posts[i].link }>
-                        { posts[i].title.rendered }
+        if( testimonials.data.length > 0 ) {
+            for( let i=0; i<testimonials.data.length; i++ ) {
+                testimonials_output.push( 
+                    <a className={ 'ss-testimonial-title ' + className } href={ testimonials.data[i].guid }>
+                        { testimonials.data[i].post_title }
                     </a>
                 );
             }
         }
-
+                
         return (
             <div>
                 {
@@ -85,7 +153,7 @@ registerBlockType( 'ss-wp-10/ss-testimonial-block', {
                     </PanelBody>
                     </InspectorControls>
                 }
-                { results }
+                { testimonials_output }
             </div>
         );
     }),
