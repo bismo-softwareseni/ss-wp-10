@@ -88,5 +88,11 @@ function ss_register_block() {
 		)
 	);
 
+	register_post_meta( 'wt9-testimonial', 'tst_author', array(
+        'show_in_rest' => true,
+        'single' => true,
+        'type' => 'string',
+    ) );
+
 }
 add_action( 'init', 'ss_register_block' );

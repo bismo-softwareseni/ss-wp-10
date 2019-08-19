@@ -8,7 +8,6 @@ const {
     apiFetch
 } = wp;
 const {
-    registerStore,
     withSelect,
 } = wp.data;
 
@@ -27,69 +26,11 @@ const {
 // -- panels
 const {
     TextControl,
+    SelectControl,
     PanelBody,
     PanelRow,
 } = wp.components;
 
-
-// -- get testimonials by registering store
-const DEFAULT_STATE = {
-    dataTestimonials: {}
-};
-const actions = {
-	setTestimonials( dataTestimonials ) {
-		return {
-			type: 'SET_TESTIMONIALS',
-			dataTestimonials,
-		};
-	},
-	getTestimonials( path ) {
-		return {
-			type: 'GET_TESTIMONIALS',
-			path,
-		};
-	},
-};
-
-const store = registerStore( 'ss-wp-10/testimonials', {
-	reducer( state = DEFAULT_STATE, action ) {
-        console.log( action );
-		switch ( action.type ) {
-			case 'SET_TESTIMONIALS':
-				return {
-					...state,
-					dataTestimonials: action.dataTestimonials,
-				};
-		}
-
-		return state;
-	},
-
-	actions,
-
-	selectors: {
-		getTestimonials( state ) {
-			const { dataTestimonials } = state;
-			return dataTestimonials;
-		},
-	},
-
-	controls: {
-		GET_TESTIMONIALS( action ) {
-			return apiFetch( { path: action.path } );
-		},
-	},
-
-	resolvers: {
-		* getTestimonials( customQuery ) {
-			const dataTestimonials = yield actions.getTestimonials( ssTestimonialApiUrl+customQuery );
-            
-            console.log( customQuery );
-            return actions.setTestimonials( dataTestimonials );
-		},
-	},
-} );
-// -- end get testimonials by registering store
 
 registerBlockType( 'ss-wp-10/ss-testimonial-block', {
     title: 'Softwareseni Testimonial',
@@ -103,41 +44,53 @@ registerBlockType( 'ss-wp-10/ss-testimonial-block', {
         testimonialFontSize: {
             type: 'integer',
             default: 16,
+        },
+        testimonialData: {
+            type: 'array',
+            default: []
         }
     },
     edit: withSelect( ( select, ownProps ) => {
         return (
             {
-                testimonials: select( 'ss-wp-10/testimonials' ).getTestimonials( "?per_page="+ownProps.attributes.maxTestimonialPerPage )
+                testimonials : apiFetch( { path: ssTestimonialApiUrl + "?per_page=" + ownProps.attributes.maxTestimonialPerPage } )
             }
         )
-    } )( ( { testimonials, className, attributes, setAttributes } ) => {        
-        // -- set testimonial value
+    } )( ( { testimonials, className, attributes, setAttributes } ) => {   
+        // -- set max testimonial to show per page attribute
         const onChangeMaxTestimonial = ( newValue ) => {
-            setAttributes( { maxTestimonialPerPage: Number.isNaN( parseInt( newValue ) ) ? 1 : parseInt( newValue ) } );
+            setAttributes( { maxTestimonialPerPage: parseInt( newValue ) } );
         };
-
-        // -- set testimonial output
-        if ( ! testimonials.data ) {
-            return "Loading...";
-        }
- 
-        if ( testimonials.data && testimonials.data.length === 0 ) {
-            return "No Testimonials";
-        }
         
-        // -- store the results in array
-        let testimonials_output = [];
+        // -- get testimonials data & output
+        if ( ! testimonials ) {
+            return "Loading...";
+        } else {
+            // -- put the results into array
+            testimonials.then( response => {
+                attributes.testimonialData[ 0 ] = response.data;
+                setAttributes( {testimonialData : attributes.testimonialData} );
+            } );
+        }
 
-        if( testimonials.data.length > 0 ) {
-            for( let i=0; i<testimonials.data.length; i++ ) {
-                testimonials_output.push( 
-                    <a className={ 'ss-testimonial-title ' + className } href={ testimonials.data[i].guid }>
-                        { testimonials.data[i].post_title }
-                    </a>
+        // -- function to render testimonial output
+        function TestimonialList( props ) {
+            const tst_IDs = props.testimonial_data;
+            let tst_items = <div></div>;
+
+            if( (tst_IDs[0] instanceof Array) ) {
+                console.log( tst_IDs[0] );
+                tst_items = tst_IDs[0].map((data_i) => 
+                    <div>aasdasdasdasdads</div>
                 );
             }
+
+            return (
+                <div>{tst_items}</div>
+            );
         }
+        
+        //-- end get testimonials data & output
                 
         return (
             <div>
@@ -145,7 +98,14 @@ registerBlockType( 'ss-wp-10/ss-testimonial-block', {
                     <InspectorControls>
                     <PanelBody title={ 'Maximum Testimonials Per Page' }>
                         <PanelRow>
-                            <TextControl
+                            <SelectControl
+                                options={[
+                                    { label: '1', value: 1 },
+                                    { label: '2', value: 2 },
+                                    { label: '3', value: 3 },
+                                    { label: '4', value: 4 },
+                                    { label: '5', value: 5 },
+                                ]}
                                 onChange={onChangeMaxTestimonial}
                                 value={attributes.maxTestimonialPerPage}
                             /> 
@@ -153,7 +113,7 @@ registerBlockType( 'ss-wp-10/ss-testimonial-block', {
                     </PanelBody>
                     </InspectorControls>
                 }
-                { testimonials_output }
+                <TestimonialList testimonial_data={attributes.testimonialData} />
             </div>
         );
     }),
