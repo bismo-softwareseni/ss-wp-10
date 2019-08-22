@@ -56,30 +56,28 @@ registerBlockType( 'ss-wp-10/ss-testimonial-block', {
                 testimonials : apiFetch( { path: ssTestimonialApiUrl + "?per_page=" + ownProps.attributes.maxTestimonialPerPage } )
             }
         )
-    } )( ( { testimonials, className, attributes, setAttributes } ) => {   
+    } )( ( { testimonials, className, attributes, setAttributes, setState } ) => {  
         // -- set max testimonial to show per page attribute
         const onChangeMaxTestimonial = ( newValue ) => {
             setAttributes( { maxTestimonialPerPage: parseInt( newValue ) } );
         };
         
-        // -- get testimonials data & output
-        if ( ! testimonials ) {
-            return "Loading...";
-        } else {
-            // -- put the results into array
-            testimonials.then( response => {
-                attributes.testimonialData[ 0 ] = response.data;
-                setAttributes( {testimonialData : attributes.testimonialData} );
-            } );
-        }
+        const getTestimonialData = async value => {
+            const response = await apiFetch( { path: ssTestimonialApiUrl + "?per_page=" + attributes.maxTestimonialPerPage } )
+            .then(
+                returned => {
+                    attributes.testimonialData[ 0 ] = returned.data;
+                    setAttributes( {testimonialData : attributes.testimonialData} );
+                }
+            );
+        };
 
         // -- function to render testimonial output
-        function TestimonialList( props ) {
+        function TestimonialList( props ) {            
             const tst_IDs = props.testimonial_data;
             let tst_items = <div></div>;
 
             if( (tst_IDs[0] instanceof Array) ) {
-                console.log( tst_IDs[0] );
                 tst_items = tst_IDs[0].map((data_i) => 
                     <div>aasdasdasdasdads</div>
                 );
@@ -89,7 +87,18 @@ registerBlockType( 'ss-wp-10/ss-testimonial-block', {
                 <div>{tst_items}</div>
             );
         }
-        
+
+        /*/ -- get testimonials data & output
+        if ( ! testimonials ) {
+            return "Loading...";
+        } else {
+            // -- put the results into array
+            testimonials.then( response => {
+                attributes.testimonialData[ 0 ] = response.data;
+                setAttributes( {testimonialData : attributes.testimonialData} );
+            } );
+        }*/
+
         //-- end get testimonials data & output
                 
         return (
